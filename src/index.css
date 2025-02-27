@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/* Dark background for the entire app */
+.bg-background {
+    background: #e3e3e3; /* dark background color */
+  }
+  
+  /* Glassmorphism effect for panels */
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #000;
+  }
+
+  
+  /* Glassmorphism effect for buttons */
+  .glass-button {
+    background: #000;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+  }
+  
+  /* A custom border color for dividers */
+  .border-glass-border {
+    border-color: #e3e3e3;
+  }
+  
+  /* Accent colors (adjust as needed) */
+  .bg-accent {
+    background: #e3e3e3; /* example accent color */
+  }
+  .text-accent {
+    color: #000;
+  }
+
+  .bg-google-btn {
+    background: #dd4b39 !important;
+    color: #fff !important;
+  }
+  .bg-fb-btn {
+    background: #1b76f2 !important;
+    color: #fff !important;
+  }
+
+  main  {
+    background-color: #e3e3e3;
+  }
+  .w-232 {
+    width: 232px;
+  }
+  .custom-w {
+    width: calc(100% - 256px);
+  }
+  .custom-h {
+     height: calc(100vh - 5rem);
+  }
+  .ml-232 {
+    margin-left: 232px;
+  }
+ .custom-table-h {
+  height: calc(100vh - 42rem);
+}
+
+.custom-bg-overlay {
+  background: rgba(255, 255, 255, .08);
+}
+
+input {
+  padding: 4px ;
+}
+
+.fixed-header {
+  position: sticky;
+  top: 0px;
+}
+td { white-space:pre-wrap } th {white-space: nowrap;}
