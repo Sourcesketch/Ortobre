@@ -1,4 +1,3 @@
-// src/components/AdminDashboard.jsx
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabase/supabaseClient";
 import { motion } from "framer-motion";
@@ -16,14 +15,12 @@ import {
   LogOut,
 } from "lucide-react";
 import Dashboard from "../Pages/Dashboard";
+
 const AdminDashboard = ({ session, onLogout }) => {
   const [isOpen, setIsOpen] = useState(false);
-  // Tab selection state: "products", "preorder", "users"
   const [selectedTab, setSelectedTab] = useState("products");
-  // Sorting state
   const [sortColumn, setSortColumn] = useState("name");
   const [sortDirection, setSortDirection] = useState("asc");
-  // States for Product Combination Section
   const [products, setProducts] = useState([]);
   const [productLoading, setProductLoading] = useState(false);
   const [productMessage, setProductMessage] = useState("");
@@ -34,23 +31,26 @@ const AdminDashboard = ({ session, onLogout }) => {
     quality: "",
     maxQuantity: "",
     basePrice: "",
-    hourlyPriceDrop: "10", // default 10%
+    hourlyPriceDrop: "10",
     unit: "",
     description: "",
   });
   const [isEditing, setIsEditing] = useState(false);
-
-  // States for Preorder Availability Section
   const [preorderStart, setPreorderStart] = useState("");
   const [preorderEnd, setPreorderEnd] = useState("");
   const [availabilityMessage, setAvailabilityMessage] = useState("");
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [preorderingEnabled, setPreorderingEnabled] = useState(true);
-
-  // States for User Management Section
   const [users, setUsers] = useState([]);
   const [userLoading, setUserLoading] = useState(false);
   const [userMessage, setUserMessage] = useState("");
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchProducts();
+    fetchSettings();
+    fetchUsers();
+  }, []);
 
   // PRODUCT FUNCTIONS
   const fetchProducts = async () => {
@@ -63,28 +63,31 @@ const AdminDashboard = ({ session, onLogout }) => {
     }
     setProductLoading(false);
   };
-  // Compute product name as concatenation of type, variety, quality.
+
   const computeProductName = (type, variety, quality) => {
     return [type, variety, quality]
       .filter((val) => val && val.trim() !== "")
       .join(" ");
   };
+
   const handleInputChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setProductLoading(true);
+    setProductMessage(""); // Clear any previous messages
+
+    // Basic validation
     if (!form.type.trim()) {
       setProductMessage("Type is required.");
       setProductLoading(false);
       return;
     }
-    const productName = computeProductName(
-      form.type,
-      form.variety,
-      form.quality
-    );
+
+    // Prepare the payload
+    const productName = computeProductName(form.type, form.variety, form.quality);
     const payload = {
       name: productName,
       type: form.type,
@@ -97,32 +100,35 @@ const AdminDashboard = ({ session, onLogout }) => {
       description: form.description,
     };
 
-    if (isEditing) {
-      const { error } = await supabase
-        .from("products")
-        .update(payload)
-        .eq("id", form.id);
-      if (error) {
-        setProductMessage(error.message);
-      } else {
+    try {
+      if (isEditing) {
+        // Update existing product
+        const { error } = await supabase
+          .from("products")
+          .update(payload)
+          .eq("id", form.id);
+
+        if (error) throw error;
         setProductMessage("Product updated successfully!");
-        resetForm();
-        fetchProducts();
-      }
-    } else {
-      // For new products, default to enabled = true.
-      payload.enabled = true;
-      const { error } = await supabase.from("products").insert([payload]);
-      if (error) {
-        setProductMessage(error.message);
       } else {
+        // Add new product
+        payload.enabled = true; // Default to enabled for new products
+        const { error } = await supabase.from("products").insert([payload]);
+
+        if (error) throw error;
         setProductMessage("Product added successfully!");
-        resetForm();
-        fetchProducts();
       }
+
+      // Reset form and fetch updated products
+      resetForm();
+      fetchProducts();
+    } catch (error) {
+      setProductMessage(error.message || "An error occurred. Please try again.");
+    } finally {
+      setProductLoading(false);
     }
-    setProductLoading(false);
   };
+
   const handleEdit = (product) => {
     setIsEditing(true);
     setForm({
@@ -137,17 +143,50 @@ const AdminDashboard = ({ session, onLogout }) => {
       description: product.description,
     });
   };
+
+  // const handleDelete = async (id) => {
+  //   console.log("Deleting product with ID:", id); // Debugging line
+  //   setProductLoading(true);
+  //   const { error } = await supabase.from("products").delete().eq("id", id);
+  //   if (error) {
+  //     console.error("Error deleting product:", error); // Debugging line
+  //     setProductMessage(error.message);
+  //   } else {
+  //     setProductMessage("Product deleted successfully!");
+  //     fetchProducts(); // Refresh the product list
+  //   }
+  //   setProductLoading(false);
+  // };
   const handleDelete = async (id) => {
     setProductLoading(true);
-    const { error } = await supabase.from("products").delete().eq("id", id);
-    if (error) {
+  
+    try {
+      // Step 1: Delete all preorders associated with the product
+      const { error: preorderError } = await supabase
+        .from("preorders")
+        .delete()
+        .eq("product_id", id);
+  
+      if (preorderError) throw preorderError;
+  
+      // Step 2: Delete the product
+      const { error: productError } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", id);
+  
+      if (productError) throw productError;
+  
+      setProductMessage("Product and associated preorders deleted successfully!");
+      fetchProducts(); // Refresh the product list
+    } catch (error) {
+      console.error("Error deleting product:", error);
       setProductMessage(error.message);
-    } else {
-      setProductMessage("Product deleted successfully!");
-      fetchProducts();
+    } finally {
+      setProductLoading(false);
     }
-    setProductLoading(false);
   };
+
   const resetForm = () => {
     setForm({
       id: null,
@@ -162,7 +201,7 @@ const AdminDashboard = ({ session, onLogout }) => {
     });
     setIsEditing(false);
   };
-  // Sorting function: toggle sort state for a column.
+
   const handleSort = (column) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -171,6 +210,7 @@ const AdminDashboard = ({ session, onLogout }) => {
       setSortDirection("asc");
     }
   };
+
   const sortedProducts = [...products].sort((a, b) => {
     let valA = a[sortColumn];
     let valB = b[sortColumn];
@@ -182,7 +222,7 @@ const AdminDashboard = ({ session, onLogout }) => {
     if (valA > valB) return sortDirection === "asc" ? 1 : -1;
     return 0;
   });
-  // Toggle enabled state for a product.
+
   const handleToggleEnabled = async (product) => {
     const newEnabled = !product.enabled;
     const { error } = await supabase
@@ -198,6 +238,7 @@ const AdminDashboard = ({ session, onLogout }) => {
       fetchProducts();
     }
   };
+
   // PREORDER FUNCTIONS
   const fetchSettings = async () => {
     const { data, error } = await supabase
@@ -213,6 +254,7 @@ const AdminDashboard = ({ session, onLogout }) => {
       setPreorderingEnabled(data.preordering_enabled);
     }
   };
+
   const handleAvailabilityUpdate = async (e) => {
     e.preventDefault();
     setAvailabilityLoading(true);
@@ -259,58 +301,9 @@ const AdminDashboard = ({ session, onLogout }) => {
     setUserLoading(false);
   };
 
-  // Fetch data on component mount
-  useEffect(() => {
-    fetchProducts();
-    fetchSettings();
-    fetchUsers();
-  }, []);
-
   return (
     <div className="flex">
       {/* SIDE NAVIGATION */}
-      {/* <aside className="w-232 bg-gray-800 text-white custom-h p-4">
-        <nav className="flex flex-col space-y-4 w-full">
-          <button
-            onClick={() => setSelectedTab("products")}
-            className={`text-left w-full px-4 py-2 rounded flex items-center gap-1.5 ${
-              selectedTab === "products" ? "bg-indigo-600" : "hover:bg-gray-700"
-            }`}
-          >
-             <Box className="w-5 h-5" />
-            Products
-          </button>
-          <button
-            onClick={() => setSelectedTab("preorder")}
-            className={`text-left w-full px-4 py-2 rounded flex items-center gap-1.5 ${
-              selectedTab === "preorder" ? "bg-indigo-600" : "hover:bg-gray-700"
-            }`}
-          >
-            <ClockArrowUp className="w-5 h-5"  />
-            Preorder
-          </button>
-          <button
-            onClick={() => setSelectedTab("users")}
-            className={`text-left w-full px-4 py-2 rounded flex items-center gap-1.5 ${
-              selectedTab === "users" ? "bg-indigo-600" : "hover:bg-gray-700"
-            }`}
-          >
-            <UserCog className="w-5 h-5"/>
-            User Management
-          </button>
-          <button
-            onClick={() => setSelectedTab("reports")}
-            className={`text-left w-full px-4 py-2 rounded flex items-center gap-1.5 ${
-              selectedTab === "reports" ? "bg-indigo-600" : "hover:bg-gray-700"
-            }`}
-          >
-            <FileChartColumnIncreasing className="w-5 h-5" />
-            Reports
-          </button>
-        </nav>
-      </aside> */}
-
-      {/* Desktop Sidebar (Visible on ≥ 768px) */}
       <aside className="hidden md:flex flex-col w-64 custom-h bg-gray-800 text-white p-5 fixed">
         <h1 className="text-2xl font-bold mb-2"></h1>
         <nav className="space-y-4">
@@ -435,8 +428,8 @@ const AdminDashboard = ({ session, onLogout }) => {
           </aside>
         </>
       )}
-      {/* MAIN CONTENT AREA */}
 
+      {/* MAIN CONTENT AREA */}
       <main className="flex-grow p-6 custom-h flex flex-col space-y-4 md:w-full custom-w ml-0 md:ml-64 overflow-auto">
         {/* PRODUCTS TAB */}
         {selectedTab === "products" && (
@@ -461,7 +454,6 @@ const AdminDashboard = ({ session, onLogout }) => {
                   onSubmit={handleSubmit}
                   className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                 >
-                 
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
                       Type*
@@ -701,7 +693,6 @@ const AdminDashboard = ({ session, onLogout }) => {
                           {product.description}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {/* {product.enabled ? "Yes" : "No"} */}
                           <button
                             onClick={() => handleToggleEnabled(product)}
                             className="text-blue-600 hover:text-blue-900"

@@ -7,17 +7,6 @@ import UserDashboard from '../components/UserDashboard';
 import Navbar from '../components/Navbar';
 
 
-// Example user view component
-// const UserDashboard = () => {
-//   return (
-//     <div className="p-4">
-//       <h1 className="text-2xl font-bold">Welcome!</h1>
-//       <p>This is the user dashboard view. Here you can browse and manage your orders.</p>
-//       {/* Add more user-specific functionality here */}
-//     </div>
-//   );
-// };
-
 const Dashboard = ({ session }) => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);

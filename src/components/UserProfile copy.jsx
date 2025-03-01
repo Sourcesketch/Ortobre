@@ -4,47 +4,33 @@ import { motion } from "framer-motion";
 
 import toast from "react-hot-toast";
 
-const fetchUserProfile = async (userId) => {
-  try {
-    // Fetch authentication data from auth.users
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-
-    if (authError) throw authError;
-
-    // Fetch additional profile data from profiles table
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-
-    if (profileError) throw profileError;
-
-    // Combine data from auth.users and profiles
-    return {
-      ...authData.user, // Data from auth.users
-      ...profileData, // Data from profiles
-    };
-  } catch (error) {
-    console.error("Error fetching user profile:", error.message);
-    return null;
-  }
-};
-
 const UserProfile = ({ session }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch user profile data
-  const fetchProfile = async ({ session }) => {
+  const fetchProfile = async () => {
     setLoading(true);
     try {
-      // Fetch combined data
-      const userProfile = await fetchUserProfile(session.user.id);
+      // Fetch authentication data from auth.users
+      const { data: authData, error: authError } = await supabase.auth.getUser();
 
-      if (!userProfile) throw new Error("No profile data found");
+      if (authError) throw authError;
 
-      setProfile(userProfile);
+      // Fetch additional profile data from profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      // Combine data from auth.users and profiles
+      setProfile({
+        ...authData.user,
+        ...profileData,
+      });
     } catch (error) {
       toast.error(`Error fetching profile: ${error.message}`);
     } finally {
@@ -72,7 +58,9 @@ const UserProfile = ({ session }) => {
       className="w-full"
     >
       <div className="bg-white p-6 rounded-lg shadow-md mt-8">
-        <h3 className="text-xl font-semibold text-gray-700 mb-4">Profile</h3>
+        <h3 className="text-xl font-semibold text-gray-700 mb-4">
+          Profile
+        </h3>
         {profile ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -109,6 +97,8 @@ const UserProfile = ({ session }) => {
         ) : (
           <p>No Profile Exist</p>
         )}
+
+        
       </div>
     </motion.div>
   );
