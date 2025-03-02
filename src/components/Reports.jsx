@@ -6,13 +6,12 @@ import { ArrowUpDown } from "lucide-react";
 import { pdf } from "@react-pdf/renderer";
 import ReportPDF from "./ReportPdf"; // Import the PDF component
 
-
 // Helper function to compute product name
 const computeProductName = (type, variety, quality) => {
   return [type, variety, quality].filter((val) => val && val.trim() !== "").join(" ");
 };
 
-// Function to download PDF 
+// Function to download PDF
 const downloadPDF = async (reportType, reportDate, data) => {
   const doc = <ReportPDF reportType={reportType} reportDate={reportDate} data={data} />;
   const blob = await pdf(doc).toBlob();
@@ -20,12 +19,13 @@ const downloadPDF = async (reportType, reportDate, data) => {
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = reportType === "preorders" ? "Completed_Preorders_Report.pdf" : "Leftover_Stock_Report.pdf";
+  a.download = reportType === "preorders" ? `Completed_Preorders_Report ${reportDate}.pdf` : `Leftover_Stock_Report ${reportDate}.pdf`;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
 };
+
 const Reports = ({ session }) => {
   const [reportTab, setReportTab] = useState("preorders");
   const [reportDate, setReportDate] = useState(new Date().toISOString().split("T")[0]);
@@ -74,33 +74,67 @@ const Reports = ({ session }) => {
 
   const fetchLeftoverStock = async () => {
     setLeftoverLoading(true);
-    const { data, error } = await supabase
-      .from("products")
-      .select(`
-        id,
-        type,
-        variety,
-        quality,
-        max_quantity,
-        remaining_stock,
-        base_price,
-        description,
-        profiles (
-          username
-        )
-      `)
-      .eq("available_date", reportDate)
-      .gt("remaining_stock", 0);
 
-    if (error) {
-      toast.error("Error fetching leftover stock: " + error.message);
-    } else {
-      data.forEach((product) => {
-        product.computed_name = computeProductName(product.type, product.variety, product.quality);
+    try {
+      // Fetch products for the selected date
+      const { data: products, error: productsError } = await supabase
+        .from("products")
+        .select(`
+          id,
+          type,
+          variety,
+          quality,
+          max_quantity,
+          base_price,
+          description,
+          profiles (
+            username
+          )
+        `)
+        .eq("available_date", reportDate);
+
+      if (productsError) throw productsError;
+
+      // Fetch preorders for the selected date
+      const { data: preorders, error: preordersError } = await supabase
+        .from("preorders")
+        .select(`
+          product_id,
+          quantity
+        `)
+        .eq("order_date", reportDate);
+
+      if (preordersError) throw preordersError;
+
+      // Calculate total preordered quantity for each product
+      const preordersMap = {};
+      preorders.forEach((order) => {
+        if (!preordersMap[order.product_id]) {
+          preordersMap[order.product_id] = 0;
+        }
+        preordersMap[order.product_id] += order.quantity;
       });
-      setLeftover(data);
+
+      // Update products with remaining_stock
+      const updatedProducts = products.map((product) => {
+        const preorderedQuantity = preordersMap[product.id] || 0;
+        const remainingStock = product.max_quantity - preorderedQuantity;
+        return {
+          ...product,
+          remaining_stock: remainingStock,
+          computed_name: computeProductName(product.type, product.variety, product.quality),
+        };
+      });
+
+      // Filter products with remaining_stock > 0
+      const leftoverProducts = updatedProducts.filter((product) => product.remaining_stock > 0);
+
+      setLeftover(leftoverProducts);
+    } catch (error) {
+      toast.error("Error fetching leftover stock: " + error.message);
+    } finally {
+      setLeftoverLoading(false);
     }
-    setLeftoverLoading(false);
   };
 
   useEffect(() => {
@@ -176,20 +210,17 @@ const Reports = ({ session }) => {
       setLeftoverSortDirection("asc");
     }
   };
-  // send email
+
+  // Send email
   const sendEmailReport = async () => {
-    
     try {
       const reportData = reportTab === "preorders" ? preorders : leftover;
-      console.log(reportTab)
-      console.log(reportData)
-      console.log(reportDate)
       const response = await fetch("http://localhost:5000/send-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reportType: reportTab, reportDate, data: reportData }),
       });
-  
+
       const result = await response.json();
       if (response.ok) {
         toast.success("Email sent successfully!");
@@ -200,9 +231,6 @@ const Reports = ({ session }) => {
       toast.error("Error sending email");
     }
   };
-  
-  
- 
 
   return (
     <div className="p-6">
@@ -223,7 +251,7 @@ const Reports = ({ session }) => {
             Leftover Stock
           </button>
         </div>
-        <div className="flex  items-center flex-wrap gap-4">
+        <div className="flex items-center flex-wrap gap-4">
           <div>
             <label className="mr-2 text-sm">Report Date:</label>
             <input
@@ -234,14 +262,14 @@ const Reports = ({ session }) => {
             />
           </div>
           <button
-         onClick={() => downloadPDF(reportTab, reportDate, reportTab === "preorders" ? preorders : leftover)}
+            onClick={() => downloadPDF(reportTab, reportDate, reportTab === "preorders" ? preorders : leftover)}
             className="px-4 py-2 bg-green-600 text-white rounded"
           >
             Export as PDF
           </button>
           <button onClick={sendEmailReport} className="px-4 py-2 bg-blue-600 text-white rounded">
-  Send Email Report
-</button>
+            Send Email Report
+          </button>
         </div>
       </div>
 

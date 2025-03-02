@@ -8,29 +8,29 @@ import { Box, LogOut, Menu, ShoppingCart, UserPen, X } from "lucide-react";
 
 const UserDashboard = ({ session, onLogout }) => {
   const [isOpen, setIsOpen] = useState(false);
-  // Tab selection state: "products", "profile", "previousOrders"
+  // Tab selection state: "products", "profile", "previous orders"
   const [selectedTab, setSelectedTab] = useState("products");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedQuantities, setSelectedQuantities] = useState({});
-  // For toggling "Show more" / "Show less" per card, we'll track this per product id.
-  const [expandedMap, setExpandedMap] = useState({});
+  const [expanded, setExpanded] = useState(false);
 
   const fetchProducts = async () => {
     setLoading(true);
     const today = new Date().toISOString().split("T")[0];
- 
+    console.log(today, "today");
     const { data, error } = await supabase
       .from("products")
       .select(
-        "id, name, description, base_price, type, variety, max_quantity, remaining_stock, unit"
+        "id, name, description, base_price,type, variety, max_quantity, remaining_stock"
       )
       .eq("available_date", today);
     if (error) {
       console.error("Error fetching products:", error.message);
     } else {
-       
+      console.log(data, "dataaaaaaaa");
       setProducts(data);
+
     }
     setLoading(false);
   };
@@ -63,6 +63,24 @@ const UserDashboard = ({ session, onLogout }) => {
       ...selectedQuantities,
       [productId]: value,
     });
+  };
+  // Render dropdown options based on the lower of max_quantity and remaining_stock.
+  const renderQuantityOptions = (product) => {
+    // Use remaining_stock if defined; otherwise max_quantity.
+    const availableStock =
+      product.remaining_stock !== null && product.remaining_stock !== undefined
+        ? product.remaining_stock
+        : product.max_quantity;
+    const limit = Math.min(product.max_quantity, availableStock);
+    const options = [];
+    for (let i = 1; i <= limit; i++) {
+      options.push(
+        <option key={i} value={i}>
+          {i}
+        </option>
+      );
+    }
+    return options;
   };
 
   // Handle preorder submission: store in preorders table and update remaining_stock.
@@ -108,16 +126,49 @@ const UserDashboard = ({ session, onLogout }) => {
     }
   };
 
-  // Toggle expanded state for a specific product card
-  const toggleExpanded = (productId) => {
-    setExpandedMap({
-      ...expandedMap,
-      [productId]: !expandedMap[productId],
-    });
-  };
-
   return (
     <div className="flex">
+      {/* Fixed Side Navigation */}
+      {/* <aside className="fixed left-0 w-232 bg-gray-800 text-white p-4 custom-h ">
+        <nav className="flex flex-col space-y-4 w-full">
+        <button
+            onClick={() => setSelectedTab("products")}
+            className={`text-left w-full px-4 py-2 rounded flex items-center gap-1.5 ${
+              selectedTab === "products" ? "bg-indigo-600" : "hover:bg-gray-700"
+            }`}
+          >
+            <Box className="w-5 h-5"/>
+            Products
+          </button>
+        
+        </nav>
+        <nav className="flex flex-col space-y-4 w-full">
+        <button
+            onClick={() => setSelectedTab("profile")}
+            className={`text-left w-full px-4 py-2 rounded flex items-center gap-1.5 ${
+              selectedTab === "profile" ? "bg-indigo-600" : "hover:bg-gray-700"
+            }`}
+          >
+            <UserPen className="w-5 h-5"/>
+            Profile 
+          </button>
+           
+        </nav>
+        <nav className="flex flex-col space-y-4 w-full">
+        <button
+            onClick={() => setSelectedTab("previousOrders")}
+            className={`text-left w-full px-4 py-2 rounded  flex items-center gap-1.5 ${
+              selectedTab === "previousOrders" ? "bg-indigo-600" : "hover:bg-gray-700"
+            }`}
+          >
+            <ShoppingCart className="w-5 h-5"/>
+            Previous Orders 
+          </button>
+       
+        </nav>
+        
+      </aside> */}
+
       {/* Desktop Sidebar (Visible on ≥ 768px) */}
       <aside className="hidden lg:flex flex-col w-64 custom-h bg-gray-800 text-white p-5 fixed">
         <h1 className="text-2xl font-bold mb-2"></h1>
@@ -142,7 +193,7 @@ const UserDashboard = ({ session, onLogout }) => {
           </button>
           <button
             onClick={() => setSelectedTab("previousOrders")}
-            className={`text-left w-full px-4 py-2 rounded flex items-center gap-1.5 ${
+            className={`text-left w-full px-4 py-2 rounded  flex items-center gap-1.5 ${
               selectedTab === "previousOrders"
                 ? "bg-indigo-600"
                 : "hover:bg-gray-700"
@@ -170,6 +221,7 @@ const UserDashboard = ({ session, onLogout }) => {
             className="fixed inset-0 custom-bg-overlay bg-opacity-50 z-40"
             onClick={() => setIsOpen(false)}
           ></div>
+
           {/* Sidebar */}
           <aside className="fixed top-0 left-0 w-64 custom-h bg-gray-800 text-white p-5 z-50 transition-transform transform translate-x-0">
             <button
@@ -204,7 +256,7 @@ const UserDashboard = ({ session, onLogout }) => {
               </button>
               <button
                 onClick={() => setSelectedTab("previousOrders")}
-                className={`text-left w-full px-4 py-2 rounded flex items-center gap-1.5 ${
+                className={`text-left w-full px-4 py-2 rounded  flex items-center gap-1.5 ${
                   selectedTab === "previousOrders"
                     ? "bg-indigo-600"
                     : "hover:bg-gray-700"
@@ -216,7 +268,7 @@ const UserDashboard = ({ session, onLogout }) => {
             </nav>
             <button
               onClick={onLogout}
-              className="mt-2 flex items-center p-4 text-red-400 hover:bg-red-500/10 rounded"
+              className="mt-2 flex items-center p-4  text-red-400 hover:bg-red-500/10 rounded"
             >
               <LogOut className="w-5 h-5 me-2" />
               Logout
@@ -239,94 +291,70 @@ const UserDashboard = ({ session, onLogout }) => {
               <p className="text-gray-500">No products available today.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 auto-rows-[minmax(0,1fr)]">
-                {products.map((product) => {
-                  const currentQty = selectedQuantities[product.id] || 1;
-                  const availableStock =
-                    product.remaining_stock !== null &&
-                    product.remaining_stock !== undefined
-                      ? product.remaining_stock
-                      : product.max_quantity;
-                  return (
-                    <div
-                      key={product.id}
-                      className="px-4 py-3 bg-white shadow-md hover:shadow-xl duration-500 rounded-lg flex flex-col"
+                {products.map((product) => (
+                  <div
+                    className="px-4 py-3 bg-white shadow-md hover:shadow-xl duration-500 rounded-lg flex flex-col"
+                    key={product.id}
+                  >
+                    <span className="text-gray-400 mr-3 uppercase text-xs">
+                      {product.type}
+                    </span>
+                    <p className="text-lg font-bold text-black truncate block capitalize">
+                      {product.name}
+                    </p>
+                    <p
+                      className={`text-gray-600 mt-1 flex-grow ${
+                        !expanded ? "line-clamp-2" : ""
+                      }`}
                     >
-                      <span className="text-gray-400 mr-3 uppercase text-xs">
-                        {product.type}
-                      </span>
-                      <p className="text-lg font-bold text-black truncate block capitalize">
-                        {product.name}
-                      </p>
-                      <p
-                        className={`text-gray-600 mt-1 flex-grow ${
-                          !expandedMap[product.id] ? "line-clamp-2" : ""
-                        }`}
-                      >
-                        {product.description}
-                      </p>
-                      {/* <p className="text-sm text-gray-500 mt-1 bg-amber-400">
-                        {product.unit}
-                      </p> */}
-
-                      {product.description &&
-                        product.description.length > 100 && (
-                          <button
-                            onClick={() => toggleExpanded(product.id)}
-                            className="text-sm text-blue-500 hover:underline text-left"
-                          >
-                            {expandedMap[product.id]
-                              ? "Show less"
-                              : "Show more"}
-                          </button>
-                        )}
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center">
-                          <p className="text-2xl font-bold text-black my-3">
-                            ${calculateDynamicPrice(product.base_price)}
+                      {product.description}
+                    </p>
+                    {product.description &&
+                      product.description.length > 100 && (
+                        <button
+                          onClick={() => setExpanded(!expanded)}
+                          className="text-sm text-blue-500 hover:underline text-left"
+                        >
+                          {expanded ? "Show less" : "Show more"}
+                        </button>
+                      )}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <p className="text-2xl font-bold text-black cursor-auto my-3">
+                          ${calculateDynamicPrice(product.base_price)}
+                        </p>
+                        <del>
+                          <p className="text-sm text-gray-600 cursor-auto ml-2">
+                            ${product.base_price}
                           </p>
-                          <del>
-                            <p className="text-sm text-gray-600 ml-2">
-                              ${product.base_price}
-                            </p>
-                          </del>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() =>
-                              handleQuantityChange(
-                                product.id,
-                                Math.max(currentQty - 1, 1)
-                              )
-                            }
-                            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition"
-                          >
-                            -
-                          </button>
-                          <span className="text-lg font-semibold">
-                            {currentQty} {product.unit}
-                          </span>
-                          <button
-                            onClick={() =>
-                              handleQuantityChange(
-                                product.id,
-                                Math.min(currentQty + 1, availableStock)
-                              )
-                            }
-                            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition"
-                          >
-                            +
-                          </button>
-                        </div>
+                        </del>
                       </div>
-                      <button
-                        onClick={() => handlePreorder(product)}
-                        className="mt-3 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition-colors w-full"
-                      >
-                        Preorder
-                      </button>
+                      <div className="mt-2 d-flex flex-wrap items-end">
+                        <label className="text-xs text-gray-700">
+                          Select Quantity:
+                        </label>
+                        <select
+                          className="ml-2 border border-gray-300 rounded p-1"
+                          value={selectedQuantities[product.id] || 1}
+                          onChange={(e) =>
+                            handleQuantityChange(
+                              product.id,
+                              parseInt(e.target.value)
+                            )
+                          }
+                        >
+                          {renderQuantityOptions(product)}
+                        </select>
+                      </div>
                     </div>
-                  );
-                })}
+                    <button
+                      onClick={() => handlePreorder(product)}
+                      className="mt-3 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition-colors w-full"
+                    >
+                      Preorder
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>

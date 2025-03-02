@@ -16,11 +16,10 @@ const Auth = () => {
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isPhoneLogin, setIsPhoneLogin] = useState(false);
-  const [otp, setOtp] = useState('123456');
-  const [showPhoneInput, setShowPhoneInput] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false); // Track if OTP is verified
+  const [isPhoneLogin, setIsPhoneLogin] = useState(false); // State for phone login
+  const [otp, setOtp] = useState(''); // State for OTP
+  const [showPhoneInput, setShowPhoneInput] = useState(false); // State to show phone input
+  const [otpSent, setOtpSent] = useState(false); // State to track if OTP is sent
 
   const checkEmailExists = async (email) => {
     const { data, error } = await supabase
@@ -70,6 +69,7 @@ const Auth = () => {
                 name,
                 surname,
                 phone,
+
               }
             ]);
 
@@ -107,6 +107,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: { redirectTo: `${window.location.origin}/dashboard`, queryParams: {
+          // Request additional user data from Google
           access_type: 'offline',
           prompt: 'consent',
           scope: 'email profile', // Explicitly request email and profile scopes
@@ -134,7 +135,7 @@ const Auth = () => {
         setMessage(error.message);
       } else {
         setMessage('OTP sent to your phone!');
-        setOtpSent(true);
+        setOtpSent(true); // OTP has been sent
       }
     } finally {
       setIsLoading(false);
@@ -155,68 +156,34 @@ const Auth = () => {
       if (error) {
         setMessage(error.message);
       } else {
-        setMessage('OTP verified! Please complete your profile.');
-        setOtpVerified(true); // Set OTP verification to true
+        setMessage('OTP verified! Redirecting...');
+        navigate('/dashboard');
       }
     } finally {
       setIsLoading(false);
     }
   };
-
-  const handleProfileUpdate = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    setIsLoading(true);
-
-    try {
-      const { data: user, error: authError } = await supabase.auth.getUser();
-
-      if (authError) throw authError;
-
-      const { error: profileError } = await supabase.from('profiles').insert([
-        {
-          id: user.user.id,
-          email,
-          username,
-          name,
-          surname,
-          phone,
-          role: 'user',
-        },
-      ]);
-
-      if (profileError) throw profileError;
-
-      setMessage('Profile updated successfully!');
-      navigate('/dashboard');
-    } catch (error) {
-      setMessage(`Error updating profile: ${error.message}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         const { id, email, user_metadata, phone } = session.user;
-
+  
         // Log the user's Google profile data
         console.log('Google Profile Data:', session.user);
-
+  
         // Extract user data from Google
-        const { given_name: name, family_name: surname } = user_metadata || {};
-
+        const { given_name: name, family_name: surname} = user_metadata || {};
+  
         // Log extracted data
         console.log('Extracted Data:', { name, surname });
-
+  
         // Check if the user already exists in the profiles table
         const { data: existingUser, error: fetchError } = await supabase
           .from('profiles')
           .select('id')
           .eq('id', id)
           .single();
-
+  
         if (fetchError || !existingUser) {
           // If the user doesn't exist, insert their data into the profiles table
           const { error: insertError } = await supabase.from('profiles').insert([
@@ -230,7 +197,7 @@ const Auth = () => {
               role: 'user',
             },
           ]);
-
+  
           if (insertError) {
             console.error('Error saving social login user:', insertError);
             setMessage('Error saving profile data.');
@@ -240,15 +207,50 @@ const Auth = () => {
         } else {
           setMessage('Welcome back!');
         }
-
+  
         navigate('/dashboard'); // Redirect to dashboard after successful sign-in
       }
     });
-
+  
     return () => {
       authListener.subscription.unsubscribe();
     };
   }, [navigate]);
+  // useEffect(() => {
+  //   const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+  //     if (event === 'SIGNED_IN' && session?.user) {
+  //       const { id, email } = session.user;
+
+  //       const { data: existingUser, error: fetchError } = await supabase
+  //         .from('profiles')
+  //         .select('id')
+  //         .eq('id', id)
+  //         .single();
+
+  //       if (fetchError || !existingUser) {
+  //         const { error: insertError } = await supabase.from('profiles').insert([
+  //           {
+  //             id,
+  //             email,
+  //             username: email.split('@')[0],
+  //             name: '',
+  //             surname: '',
+  //             phone: '',
+  //             role: 'user'
+  //           }
+  //         ]);
+
+  //         if (insertError) {
+  //           console.error('Error saving social login user:', insertError);
+  //         }
+  //       }
+  //     }
+  //   });
+
+  //   return () => {
+  //     authListener.subscription.unsubscribe();
+  //   };
+  // }, []);
 
   return (
     <div className="min-h-screen p-6 flex items-center justify-center bg-background">
@@ -371,123 +373,56 @@ const Auth = () => {
           </form>
         ) : (
           <>
-            {!otpVerified ? (
-              <>
-                {!otpSent ? (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label htmlFor="phone" className="block text-sm text-gray-500">
-                        Phone Number
-                      </label>
-                      <input
-                        type="text"
-                        id="phone"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="w-full glass-panel px-4 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded"
-                        placeholder="Enter your phone number"
-                        required
-                      />
-                    </div>
-                    <button
-                      onClick={handlePhoneLogin}
-                      disabled={isLoading}
-                      className="glass-button w-full flex items-center justify-center gap-2 text-dark py-2 rounded hover:bg-opacity-80 transition"
-                    >
-                      {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                      Send OTP
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label htmlFor="otp" className="block text-sm text-gray-500">
-                        Enter OTP
-                      </label>
-                      <input
-                        type="text"
-                        id="otp"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value)}
-                        className="w-full glass-panel px-4 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded"
-                        placeholder="Enter the OTP sent to your phone"
-                        required
-                      />
-                    </div>
-                    <button
-                      onClick={verifyOtp}
-                      disabled={isLoading}
-                      className="glass-button w-full flex items-center justify-center gap-2 text-dark py-2 rounded hover:bg-opacity-80 transition"
-                    >
-                      {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                      Verify OTP
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <form onSubmit={handleProfileUpdate} className="space-y-4">
+            {!otpSent ? (
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="username" className="block text-sm text-gray-500">
-                    Username
+                  <label htmlFor="phone" className="block text-sm text-gray-500">
+                    Phone Number
                   </label>
                   <input
                     type="text"
-                    id="username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    id="phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                     className="w-full glass-panel px-4 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="name" className="block text-sm text-gray-500">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full glass-panel px-4 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="surname" className="block text-sm text-gray-500">
-                    Surname
-                  </label>
-                  <input
-                    type="text"
-                    id="surname"
-                    value={surname}
-                    onChange={(e) => setSurname(e.target.value)}
-                    className="w-full glass-panel px-4 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="email" className="block text-sm text-gray-500">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full glass-panel px-4 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded"
+                    placeholder="Enter your phone number"
                     required
                   />
                 </div>
                 <button
-                  type="submit"
+                  onClick={handlePhoneLogin}
                   disabled={isLoading}
                   className="glass-button w-full flex items-center justify-center gap-2 text-dark py-2 rounded hover:bg-opacity-80 transition"
                 >
                   {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Complete Profile
+                  Send OTP
                 </button>
-              </form>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="otp" className="block text-sm text-gray-500">
+                    Enter OTP
+                  </label>
+                  <input
+                    type="text"
+                    id="otp"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    className="w-full glass-panel px-4 py-2 text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded"
+                    placeholder="Enter the OTP sent to your phone"
+                    required
+                  />
+                </div>
+                <button
+                  onClick={verifyOtp}
+                  disabled={isLoading}
+                  className="glass-button w-full flex items-center justify-center gap-2 text-dark py-2 rounded hover:bg-opacity-80 transition"
+                >
+                  {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Verify OTP
+                </button>
+              </div>
             )}
           </>
         )}
@@ -534,7 +469,6 @@ const Auth = () => {
             onClick={() => {
               setIsPhoneLogin(!isPhoneLogin);
               setOtpSent(false); // Reset OTP sent state
-              setOtpVerified(false); // Reset OTP verified state
             }}
             className="text-accent hover:text-accent/80 text-sm underline"
           >
