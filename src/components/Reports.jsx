@@ -240,13 +240,13 @@ const Reports = ({ session }) => {
         <div className="flex flex-wrap md:gap-0 gap-4 space-x-4">
           <button
             onClick={() => setReportTab("preorders")}
-            className={`px-4 py-2 rounded ${reportTab === "preorders" ? "bg-indigo-600 text-white" : "bg-accent text-gray-700"}`}
+            className={`px-4 py-2 rounded cursor-pointer ${reportTab === "preorders" ? "bg-indigo-600 text-white" : "bg-accent text-gray-700"}`}
           >
             Completed Preorders
           </button>
           <button
             onClick={() => setReportTab("leftover")}
-            className={`px-4 py-2 rounded ${reportTab === "leftover" ? "bg-indigo-600 text-white" : "bg-accent text-gray-700"}`}
+            className={`px-4 py-2 rounded cursor-pointer ${reportTab === "leftover" ? "bg-indigo-600 text-white" : "bg-accent text-gray-700"}`}
           >
             Leftover Stock
           </button>
@@ -263,11 +263,11 @@ const Reports = ({ session }) => {
           </div>
           <button
             onClick={() => downloadPDF(reportTab, reportDate, reportTab === "preorders" ? preorders : leftover)}
-            className="px-4 py-2 bg-green-600 text-white rounded"
+            className="px-4 py-2 cursor-pointer bg-green-600 text-white rounded"
           >
             Export as PDF
           </button>
-          <button onClick={sendEmailReport} className="px-4 py-2 bg-blue-600 text-white rounded">
+          <button onClick={sendEmailReport} className="px-4 py-2 cursor-pointer bg-blue-600 text-white rounded">
             Send Email Report
           </button>
         </div>

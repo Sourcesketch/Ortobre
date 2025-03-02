@@ -309,7 +309,7 @@ const AdminDashboard = ({ session, onLogout }) => {
         <nav className="space-y-4">
           <button
             onClick={() => setSelectedTab("products")}
-            className={`text-left w-full px-4 py-2 rounded flex items-center gap-1.5 ${
+            className={`text-left w-full px-4 py-2 rounded flex items-center gap-1.5 cursor-pointer ${
               selectedTab === "products" ? "bg-indigo-600" : "hover:bg-gray-700"
             }`}
           >
@@ -318,7 +318,7 @@ const AdminDashboard = ({ session, onLogout }) => {
           </button>
           <button
             onClick={() => setSelectedTab("preorder")}
-            className={`text-left w-full px-4 py-2 rounded flex items-center gap-1.5 ${
+            className={`text-left w-full px-4 py-2 rounded flex items-center gap-1.5 cursor-pointer ${
               selectedTab === "preorder" ? "bg-indigo-600" : "hover:bg-gray-700"
             }`}
           >
@@ -327,7 +327,7 @@ const AdminDashboard = ({ session, onLogout }) => {
           </button>
           <button
             onClick={() => setSelectedTab("users")}
-            className={`text-left w-full px-4 py-2 rounded flex items-center gap-1.5 ${
+            className={`text-left w-full px-4 py-2 rounded flex items-center gap-1.5 cursor-pointer ${
               selectedTab === "users" ? "bg-indigo-600" : "hover:bg-gray-700"
             }`}
           >
@@ -336,7 +336,7 @@ const AdminDashboard = ({ session, onLogout }) => {
           </button>
           <button
             onClick={() => setSelectedTab("reports")}
-            className={`text-left w-full px-4 py-2 rounded flex items-center gap-1.5 ${
+            className={`text-left w-full px-4 py-2 rounded flex items-center gap-1.5 cursor-pointer ${
               selectedTab === "reports" ? "bg-indigo-600" : "hover:bg-gray-700"
             }`}
           >
@@ -563,7 +563,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                     <button
                       type="submit"
                       disabled={productLoading}
-                      className="inline-flex items-center whitespace-nowrap px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="inline-flex items-center whitespace-nowrap px-4 py-2 bg-indigo-600 border border-transparent rounded-md cursor-pointer font-semibold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
                       {isEditing ? "Update Product" : "Add Product"}
                     </button>
@@ -806,7 +806,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                     <button
                       type="submit"
                       disabled={availabilityLoading}
-                      className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md cursor-pointer font-semibold text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
                     >
                       Update Availability
                     </button>
@@ -889,7 +889,7 @@ const AdminDashboard = ({ session, onLogout }) => {
                             {user.role !== "admin" && (
                               <button
                                 onClick={() => promoteUser(user.id)}
-                                className="text-blue-600 hover:text-blue-900"
+                                className="text-blue-600 hover:text-blue-900 cursor-pointer"
                               >
                                 Promote to Admin
                               </button>

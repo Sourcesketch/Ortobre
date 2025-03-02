@@ -18,19 +18,19 @@ const Sidebar = ({ userName }) => {
       <aside className="hidden md:flex flex-col w-64 h-screen bg-gray-800 text-white p-5 fixed">
         <h1 className="text-2xl font-bold mb-5">Ortobre</h1>
         <nav className="space-y-4">
-          <a href="/" className="flex items-center p-3 hover:bg-gray-700 rounded">
+          <a href="/" className="flex items-center p-3 hover:bg-gray-700 rounded cursor-pointer">
             <Home className="w-5 h-5 mr-3" /> Dashboard
           </a>
-          <a href="/profile" className="flex items-center p-3 hover:bg-gray-700 rounded">
+          <a href="/profile" className="flex items-center p-3 hover:bg-gray-700 rounded cursor-pointer">
             <User className="w-5 h-5 mr-3" /> Profile
           </a>
-          <a href="/settings" className="flex items-center p-3 hover:bg-gray-700 rounded">
+          <a href="/settings" className="flex items-center p-3 hover:bg-gray-700 rounded cursor-pointer">
             <Settings className="w-5 h-5 mr-3" /> Settings
           </a>
         </nav>
         <button
           onClick={handleLogout}
-          className="mt-auto flex items-center p-3 text-red-400 hover:bg-red-500/10 rounded"
+          className="mt-auto flex items-center p-3 text-red-400 hover:bg-red-500/10 rounded cursor-pointer"
         >
           <LogOut className="w-5 h-5 mr-3" />
           Logout
@@ -64,19 +64,19 @@ const Sidebar = ({ userName }) => {
             </button>
             <h1 className="text-2xl font-bold mb-5">Ortobre</h1>
             <nav className="space-y-4">
-              <a href="/" className="flex items-center p-3 hover:bg-gray-700 rounded">
+              <a href="/" className="flex items-center p-3 hover:bg-gray-700 rounded cursor-pointer">
                 <Home className="w-5 h-5 mr-3" /> Dashboard
               </a>
-              <a href="/profile" className="flex items-center p-3 hover:bg-gray-700 rounded">
+              <a href="/profile" className="flex items-center p-3 hover:bg-gray-700 rounded cursor-pointer">
                 <User className="w-5 h-5 mr-3" /> Profile
               </a>
-              <a href="/settings" className="flex items-center p-3 hover:bg-gray-700 rounded">
+              <a href="/settings" className="flex items-center p-3 hover:bg-gray-700 rounded cursor-pointer">
                 <Settings className="w-5 h-5 mr-3" /> Settings
               </a>
             </nav>
             <button
               onClick={handleLogout}
-              className="mt-auto flex items-center p-3 text-red-400 hover:bg-red-500/10 rounded"
+              className="mt-auto flex items-center p-3 text-red-400 hover:bg-red-500/10 rounded cursor-pointer"
             >
               <LogOut className="w-5 h-5 mr-3" />
               Logout
