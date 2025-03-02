@@ -94,6 +94,7 @@ const AdminDashboard = ({ session, onLogout }) => {
       variety: form.variety,
       quality: form.quality,
       max_quantity: parseInt(form.maxQuantity, 10),
+      remaining_stock: parseInt(form.maxQuantity, 10),
       base_price: parseFloat(form.basePrice),
       hourly_price_drop: parseFloat(form.hourlyPriceDrop),
       unit: form.unit,

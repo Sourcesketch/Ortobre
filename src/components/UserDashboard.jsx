@@ -29,7 +29,7 @@ const UserDashboard = ({ session, onLogout }) => {
     if (error) {
       console.error("Error fetching products:", error.message);
     } else {
-       
+      console.log(data, "dataaaaaaaa");
       setProducts(data);
     }
     setLoading(false);
@@ -58,10 +58,20 @@ const UserDashboard = ({ session, onLogout }) => {
   };
 
   // Update selected quantity for a product
+  
   const handleQuantityChange = (productId, value) => {
+    // Ensure the value is within the valid range (1 to available stock)
+    const product = products.find(p => p.id === productId);
+    const availableStock = product.remaining_stock !== null && product.remaining_stock !== undefined
+      ? product.remaining_stock
+      : product.max_quantity;
+    console.log(product, 'product');
+    console.log(availableStock, 'availableStock');
+    const newValue = Math.max(1, Math.min(value, availableStock));
+    console.log(newValue, 'newValue');
     setSelectedQuantities({
       ...selectedQuantities,
-      [productId]: value,
+      [productId]: newValue,
     });
   };
 
