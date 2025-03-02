@@ -13,7 +13,8 @@ const UserProfile = ({ session }) => {
     setLoading(true);
     try {
       // Fetch authentication data from auth.users
-      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const { data: authData, error: authError } =
+        await supabase.auth.getUser();
 
       if (authError) throw authError;
 
